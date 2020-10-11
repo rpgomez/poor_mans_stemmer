@@ -158,16 +158,26 @@ def find_my_best_stem(aword,strong_candidates,mapper):
     returns best guess for stem for aword.
 
     """
-    
-    cands = [ (len(astem),astem) for astem in strong_candidates if aword in mapper[astem]]
-    if len(cands) == 0:
-        return aword
 
-    cands.sort()
-    best_cand = cands[0][1] # Find the shortest candidate
+    best_cand = None
+    for t in range(4,len(aword)):
+        stem = aword[:t]
+
+        # check to see if it's a strong candidate
+        if strong_candidates[stem] == 0:
+            # No
+            continue
+
+        # yes. see if aword is in the possible extensions of the stem
+        if mapper[stem][aword]>0:
+            # Yes
+            best_cand = stem
+            break
+
+    if best_cand == None:
+        best_cand = aword
+
     return best_cand
-
-
 
 class Stemmer():
     def __init__(self):
@@ -225,16 +235,22 @@ class Stemmer():
         
         # First stab at creating an inverse stem mapper:
         # dictionary (possible stem, list of words)
-        self.inverse_map = defaultdict(list) 
+        self.inverse_map = defaultdict(Counter) # faster than appending to a list.
         for aword in progress(vocabulary,desc='First pass stemmer map'):
             possible = stripme(aword,possible_suffixes)
             for poss in possible:
-                self.inverse_map[poss].append(aword)
+                self.inverse_map[poss][aword] = 1
+                #self.inverse_map[poss].append(aword)
 
         # Now let's see which words have possibly non-trivial stems
         lookatme = [cand for cand in self.inverse_map \
-                    if len(self.inverse_map[cand]) >1 and len(cand)> 3]
-        self.strong_candidates = list(set(lookatme).intersection(vocabulary))
+                    if sum(self.inverse_map[cand].values()) >1 and len(cand)> 3]
+        strong_candidates = list(set(lookatme).intersection(vocabulary))
+
+        # convert strong_candidates to a counter to make it a fast look up.
+        self.strong_candidates = defaultdict(int)
+        for astem in strong_candidates:
+            self.strong_candidates[astem] = 1
 
         self.stem_dict = dict([(aword,find_my_best_stem(aword,self.strong_candidates,
                                                    self.inverse_map)) \

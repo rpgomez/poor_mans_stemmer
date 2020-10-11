@@ -219,7 +219,7 @@ class Stemmer():
         if tight:
             possible_suffixes = {size:find_suffixes_tighter(vocabulary,letter_log_probs,size=size,\
                                 debug=False,cutoff=cutoff) for size in \
-                                progress(range(1, max_size),desc='Looking for suffixes')}
+                                progress(range(1, max_size),desc='Looking for suffixes tighter')}
         else:
             possible_suffixes = {size:find_suffixes(vocabulary,size=size,cutoff=cutoff)\
                                 for size in progress(range(1, max_size),\
